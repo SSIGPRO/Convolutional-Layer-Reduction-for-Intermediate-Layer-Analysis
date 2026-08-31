@@ -1,0 +1,25 @@
+\begin{table*}
+	\centering
+	\caption{Average DetError (\textdownarrow) for \gls{ood} and \gls{aa} detection methods based on the model's inputs and outputs in comparison with \gls{dmd} and \gls{macs} (configuration with highest $\aucGeomAll$) using each \glspl{dr} over \cifar. Standard deviation in subscripts. Best DetError for \gls{dmd} and \gls{macs} across the \glspl{dr} are underlined, and the best DetError of each column is highlighted in bold.}
+	\label{tab: det metrics DetError CIFAR100}
+	\resizebox{\linewidth}{!}{%
+	\begin{tabular}{c|c|c|c|c|c|c|c|c|c}
+		\toprule
+		\multirow{2}{*}{Method} & \multirow{2}{*}{Reduction} & \multicolumn{2}{c|}{\vgg} & \multicolumn{2}{c|}{\mobilenet} & \multicolumn{2}{c|}{\resnet} & \multicolumn{2}{c}{\convnext} \\\cline{3-10}
+		 &  & \gls{ood} & \gls{aa} & \gls{ood} & \gls{aa} & \gls{ood} & \gls{aa} & \gls{ood} & \gls{aa} \\\midrule
+
+		\multirow{3}{*}{\rotatebox[origin=c]{90}{\gls{macs}}} & \avgpDimRed & $0.30_{\pm .02}$ & $0.19_{\pm .09}$ & $\underline{0.26}_{\pm .03}$ & $\underline{0.09}_{\pm .05}$ & $0.15_{\pm .05}$ & $\underline{\mathbf{0.07}}_{\pm .03}$ & $\underline{0.14}_{\pm .08}$ & $\underline{\mathbf{0.06}}_{\pm .03}$ \\
+		& \toeplitzDimRed & $0.27_{\pm .03}$ & $0.19_{\pm .09}$ & $0.31_{\pm .03}$ & $0.13_{\pm .07}$ & $0.22_{\pm .03}$ & $0.15_{\pm .10}$ & $0.21_{\pm .04}$ & $0.19_{\pm .08}$ \\
+		& \kernelDimRed & $\underline{0.24}_{\pm .02}$ & $\underline{0.15}_{\pm .10}$ & $0.27_{\pm .03}$ & $\underline{0.09}_{\pm .04}$ & $\underline{0.14}_{\pm .02}$ & $0.08_{\pm .03}$ & $\underline{0.14}_{\pm .07}$ & $0.08_{\pm .03}$ \\\hline
+
+		\multirow{3}{*}{\rotatebox[origin=c]{90}{\gls{dmd}}} & \avgpDimRed & $0.08_{\pm .03}$ & $0.08_{\pm .13}$ & $\underline{\mathbf{0.04}}_{\pm .03}$ & $\underline{\mathbf{0.08}}_{\pm .14}$ & $0.17_{\pm .10}$ & $0.21_{\pm .14}$ & $0.14_{\pm .09}$ & $0.20_{\pm .17}$ \\
+		& \toeplitzDimRed & $\underline{\mathbf{0.03}}_{\pm .03}$ & $0.06_{\pm .12}$ & $0.06_{\pm .05}$ & $\underline{\mathbf{0.08}}_{\pm .16}$ & $\underline{\mathbf{0.02}}_{\pm .04}$ & $0.11_{\pm .19}$ & $\underline{\mathbf{0.04}}_{\pm .04}$ & $\underline{0.10}_{\pm .18}$ \\
+		& \kernelDimRed & $\underline{\mathbf{0.03}}_{\pm .03}$ & $\underline{\mathbf{0.03}}_{\pm .07}$ & $0.05_{\pm .05}$ & $\underline{\mathbf{0.08}}_{\pm .15}$ & $0.05_{\pm .05}$ & $\underline{0.09}_{\pm .18}$ & $0.08_{\pm .08}$ & $\underline{0.10}_{\pm .15}$ \\\hline
+
+		\multicolumn{2}{c|}{\gls{doctor}} & $0.29_{\pm .05}$ & $0.28_{\pm .24}$ & $0.31_{\pm .06}$ & $0.31_{\pm .22}$ & $0.24_{\pm .04}$ & $0.28_{\pm .24}$ & $0.22_{\pm .09}$ & $0.27_{\pm .25}$ \\\hline
+		\multicolumn{2}{c|}{\gls{relu}} & $0.35_{\pm .05}$ & $0.34_{\pm .17}$ & $0.38_{\pm .05}$ & $0.38_{\pm .13}$ & $0.28_{\pm .04}$ & $0.33_{\pm .19}$ & $0.27_{\pm .02}$ & $0.35_{\pm .16}$ \\\hline
+		\multicolumn{2}{c|}{\gls{vim}} & $0.27_{\pm .03}$ & $0.22_{\pm .19}$ & $0.21_{\pm .09}$ & $0.17_{\pm .13}$ & $0.12_{\pm .06}$ & $0.24_{\pm .13}$ & $0.24_{\pm .06}$ & $0.34_{\pm .10}$ \\\hline
+		\multicolumn{2}{c|}{\gls{fs}} & $0.30_{\pm .08}$ & $0.23_{\pm .16}$ & $0.35_{\pm .09}$ & $0.22_{\pm .10}$ & $0.23_{\pm .06}$ & $0.27_{\pm .12}$ & $0.22_{\pm .09}$ & $0.21_{\pm .12}$ \\\hline
+	\end{tabular}%
+	}
+\end{table*}

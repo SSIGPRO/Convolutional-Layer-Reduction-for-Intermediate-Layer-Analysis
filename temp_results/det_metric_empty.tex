@@ -1,0 +1,25 @@
+\begin{table*}
+	\centering
+	\caption{Average DETMETRIC (DETARROW) for \gls{ood} and \gls{aa} detection methods based on the model's inputs and outputs in comparison with \gls{dmd} and \gls{macs} (configuration with highest $\aucGeomAll$) using each \glspl{dr} over \imagenet. Standard deviation in subscripts. Best DETMETRIC for \gls{dmd} and \gls{macs} across the \glspl{dr} are underlined, and the best DETMETRIC of each column is highlighted in bold.}
+	\label{tab: det metrics}
+	\resizebox{\linewidth}{!}{%
+	\begin{tabular}{c|c|c|c|c|c|c|c|c|c}
+		\toprule
+		\multirow{2}{*}{Method} & \multirow{2}{*}{Reduction} & \multicolumn{2}{c|}{\vgg} & \multicolumn{2}{c|}{\mobilenet} & \multicolumn{2}{c|}{\resnet} & \multicolumn{2}{c}{\convnext} \\\cline{3-10}
+		 &  & \gls{ood} & \gls{aa} & \gls{ood} & \gls{aa} & \gls{ood} & \gls{aa} & \gls{ood} & \gls{aa} \\\midrule
+
+		\multirow{3}{*}{\rotatebox[origin=c]{90}{\gls{macs}}} & \avgpDimRed & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\
+		& \toeplitzDimRed & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\
+		& \kernelDimRed & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\\hline
+
+		\multirow{3}{*}{\rotatebox[origin=c]{90}{\gls{dmd}}} & \avgpDimRed & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\
+		& \toeplitzDimRed & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\
+		& \kernelDimRed & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\\hline
+
+		\multicolumn{2}{c|}{\gls{doctor}} & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\\hline
+		\multicolumn{2}{c|}{\gls{relu}} & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\\hline
+		\multicolumn{2}{c|}{\gls{vim}} & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\\hline
+		\multicolumn{2}{c|}{\gls{fs}} & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ & $._{\pm .}$ \\\hline
+	\end{tabular}%
+	}
+\end{table*}
