@@ -4,7 +4,6 @@ from pathlib import Path as Path
 sys.path.insert(0, (Path.home()/'repos/peepholelib').as_posix())
 sys.path.insert(0, (Path.home()/'repos/ConvRed').as_posix())
 
-from statistics import geometric_mean as geomean
 from filelock import FileLock
 
 # torch stuff
@@ -16,14 +15,20 @@ from peepholelib.datasets.parsedDataset import ParsedDataset
 from peepholelib.models.model_wrap import ModelWrap 
 from peepholelib.coreVectors.coreVectors import CoreVectors
 from peepholelib.peepholes.peepholes import Peepholes
-from peepholelib.plots.atks import auc_atks 
+from peepholelib.eval.detection_metrics import detection_metrics
 
 from configs.common import *
-from utils.get_best_configs import test_configs 
-from utils.save_aucs import save_aucs
-    
+from utils.get_best_configs import test_configs
+from utils.save_det_metrics import saved_scores, make_reports, save_reports
+
 if __name__ == "__main__":
-    print(f'{args}') 
+    print(f'{args}')
+
+    _saved = saved_scores(saved_df_path, args.dataset, args.model, reduction=args.reduction)
+    if args.analysis in _saved:
+        print(f'AUCs for {args.dataset} {args.model} {args.reduction} {args.analysis} already saved in {saved_df_path}. Skipping.')
+        quit()
+
     lock_file = '../locks/peepholes.cuda.lock'
     lock = FileLock(lock_file)
     with lock.acquire(timeout=-1):
@@ -120,54 +125,64 @@ if __name__ == "__main__":
                 verbose = verbose 
                 )
 
-        score_fns = get_score_fns(args.model, args.dataset, ood_datasets, atk_names, proto_threshold=proto_threshold)
-        scores = {}
-        # TODO: update aucs after PR
-        for score_name, score_fn in score_fns.items():
-            scores = score_fn(
+        scores = []
+        for _score in get_scores(
+                path = scores_path,
+                name = args.analysis,
+                ds_name = args.dataset,
+                model = args.model,
+                loaders = list(ds._dss.keys()),
+                neg_loaders = get_neg_loaders_fit(ood_datasets, atk_names),
+                proto_threshold = proto_threshold,
+                ):
+            score = _score['score']
+
+            if not score.load():
+                score.fit(
+                        datasets = ds,
+                        peepholes = ph,
+                        target_modules = target_layers,
+                        verbose = verbose,
+                        **_score['fit']
+                        )
+
+            score.compute(
                     datasets = ds,
                     peepholes = ph,
-                    score_name = score_name,
-                    batch_size = bs,
                     target_modules = target_layers,
-                    append_scores = scores,
-                    verbose = verbose
+                    verbose = verbose,
+                    **_score['compute']
                     )
-            if type(scores) == tuple: scores = scores[0]
 
-        auc_kwargs_ood = get_auc_kwargs_ood(args.model, args.dataset, ood_datasets)
-        aucs_ood = auc_atks(
-                datasets = ds,
+            scores.append(score)
+
+        res_ood = detection_metrics(
                 scores = scores,
-                **auc_kwargs_ood,
+                pos_loader = get_pos_loader(),
+                neg_loaders = get_neg_loaders_ood(ood_datasets),
+                metrics = det_metrics,
                 verbose = verbose
                 )
 
-        auc_kwargs_aa = get_auc_kwargs_aa(args.model, args.dataset, atk_names)
-        aucs_aa = auc_atks(
-                datasets = ds,
+        res_aa = detection_metrics(
                 scores = scores,
-                **auc_kwargs_aa,
+                datasets = ds,
+                pos_loader = get_pos_loader(),
+                neg_loaders = get_neg_loaders_aa(atk_names),
+                metrics = det_metrics,
+                filter_key = 'attack_success',
                 verbose = verbose
                 )
 
-        report = {}
-        _aucs = []
-        for k in auc_kwargs_ood['atk_loaders']:
-            report['AUC '+k] = list(aucs_ood[k].values())[0]
-            _aucs.append(report['AUC '+k]) 
-        report['AUC OoD'] = geomean(_aucs)
-                                                             
-        _aucs = []
-        for k in auc_kwargs_aa['atk_loaders']:
-            report['AUC '+k] = list(aucs_aa[k].values())[0]
-            _aucs.append(report['AUC '+k]) 
-        report['AUC AA'] = geomean(_aucs)
-        
-        print('Report: ', report)
-        save_aucs(
-                report,
-                aucs_df_path,
+        reports = make_reports(res_ood, res_aa, args.analysis, det_metrics)
+
+        for _metric, _report in reports.items():
+            print(f'{_metric} report: ', _report)
+
+    with lock.acquire(timeout=-1):
+        save_reports(
+                reports,
+                det_metrics_df_paths,
                 dataset   = args.dataset,
                 model     = args.model,
                 reduction = args.reduction,

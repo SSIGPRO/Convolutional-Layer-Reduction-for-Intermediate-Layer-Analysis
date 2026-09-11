@@ -19,7 +19,7 @@ Folders and files containing experiments and configurations:
 - `datasets`: experiment for parsing dataset and applying adversarial attacks.
 - `corevectors`: experiment for computing the corevectors.
 - `tuning`: experiment for tuning the OoD and AA detection methods.
-- `peepholes`: experiment for evaluating the best configuration from tuning.
+- `det_metrics`: experiments for computing the detection metrics, both for the best configuration from tuning (`xp_peepholes.py`) and for the baseline detection methods (`xp_others.py`).
 - `eval`: making plots, computing AUCs, and generating result tables.
 - `temp_results`: plots and filled LaTeX tables are saved here.
 - `utils`: auxiliary implementations.
@@ -48,8 +48,10 @@ To run all combinations of models, reduction and analysis, one can use:
 make xp_datasets
 make xp_corevectors
 make xp_tuning
-make xp_peepholes
+make xp_det_metrics_ph
+make xp_det_metrics_others
 ```
+The `xp_det_metrics_ph` rule runs `det_metrics/xp_peepholes.py` for every reduction and analysis, and `xp_det_metrics_others` runs `det_metrics/xp_others.py` for the baseline detection methods.
 
 ## Finetuning models
 
@@ -75,6 +77,12 @@ To fill the best-configuration LaTeX table (requires tuning results) run:
 python eval/fill_table.py -d <directory>
 ```
 This reads `temp_results/blank_table.tex` as a template and writes one filled `temp_results/bestConfigs_<dataset>.tex` per dataset.
+
+To fill the detection metrics LaTeX tables (requires the reports produced by `make xp_det_metrics_ph` and `make xp_det_metrics_others`) run:
+```sh
+python eval/fill_det_metrics.py -d <directory>
+```
+This reads `temp_results/det_metric_empty.tex` as a template and writes one filled `temp_results/<metric>_<dataset>.tex` per metric and dataset, for every metric in `det_metrics`. Each cell holds the average metric with its standard deviation as a subscript. The best value across the reductions is underlined for `MACS` and `DMD` independently, and the best value of each column is highlighted in bold. Entries missing from the results are left as `$._{\pm .}$`.
 
 ## Problems Running?
 The `peepholelib` has a considerable number of dependencies and the scripts might break depending on their versions. Check the `requirements.txt` file with the main packages versions used in our experiments.

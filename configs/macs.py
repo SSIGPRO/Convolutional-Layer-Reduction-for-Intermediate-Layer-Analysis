@@ -1,6 +1,3 @@
-# Python stuff
-from functools import partial
-
 # Torch stuff
 from torch import linspace, int32
 
@@ -8,8 +5,8 @@ from torch import linspace, int32
 from ray.tune import choice 
 
 # Peepholelib stuff
-from peepholelib.peepholes.classifiers.tgmm import GMM as Driller 
-from peepholelib.scores.protoclass import conceptogram_protoclass_score as proto_score 
+from peepholelib.peepholes.classifiers.tgmm import GMM as Driller
+from peepholelib.scores.protoclass import ProtoClassScore
 
 bs_analysis_scale = 2**5
 
@@ -53,30 +50,34 @@ def analysis_param_space(configs, args):
     configs['dataset'] = args.dataset
     return configs
 
-# TODO: update score after PR
-def get_score_fns(model, ds_name, ood_dss=None, atks=None, proto_threshold=0.9):
-    return {
-            'MACS': partial(
-                proto_score,
-                proto_key = f'{ds_name}-train-{model}',
-                proto_threshold = proto_threshold
-                )
-        }
+def get_scores(**kwargs):
+    '''
+    Return the analysis scores along with the arguments of their `fit()` and `compute()`, so that the scripts can fit and compute them uniformly.
 
-def get_auc_kwargs_ood(model, ds_name, ood_dss):
-    return {
-            'ori_loaders': {
-                'MACS': f'{ds_name}-test-{model}',
-                },
-            'atk_loaders': [f'{k}-test-{model}' for k in ood_dss.keys()],
-            'filter_key': None
-            }
+    Args:
+    - path (str|pathlib.Path): folder where the scores are saved.
+    - name (str): name of the score.
+    - ds_name (str), model (str): dataset and model names, used to build the loader keys.
+    - loaders (list[str]): loaders to score.
+    - proto_threshold (float): model's confidence threshold to select the protoclass samples. Defaults to 0.9.
 
-def get_auc_kwargs_aa(model, ds_name, atks):
-    return {
-            'ori_loaders': {
-                'MACS': f'{ds_name}-test-{model}',
-                },
-            'atk_loaders': [
-                f'{ds_name}-test-{a}-{model}' for a in atks],
-            }
+    Returns:
+    - list[dict]: one entry per score, with the score in 'score' and its specific arguments in 'fit' and 'compute'.
+    '''
+    path = kwargs['path']
+    name = kwargs['name']
+    ds_name = kwargs['ds_name']
+    model = kwargs['model']
+    loaders = kwargs['loaders']
+    proto_threshold = kwargs.get('proto_threshold', 0.9)
+
+    return [{
+        'score': ProtoClassScore(path=path, name=name),
+        'fit': {
+            'fit_key': f'{ds_name}-train-{model}',
+            'proto_threshold': proto_threshold,
+            },
+        'compute': {
+            'loaders': loaders,
+            },
+        }]

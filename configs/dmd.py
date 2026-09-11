@@ -1,13 +1,10 @@
-# Python stuff
-from functools import partial
-
 # Ray Stuff
 from torch import linspace
 from ray.tune import choice 
 
 # Peepholelib stuff
-from peepholelib.peepholes.DeepMahalanobisDistance.DMD import DeepMahalanobisDistance as Driller 
-from peepholelib.scores.dmd import DMD_score as dmd_score
+from peepholelib.peepholes.DeepMahalanobisDistance.DMD import DeepMahalanobisDistance as Driller
+from peepholelib.scores.dmd import DMDScore
 
 bs_analysis_scale = 2**-2
 
@@ -54,36 +51,32 @@ def analysis_param_space(configs, args):
     configs['dataset'] = args.dataset
     return configs
 
-# TODO: update score after PR
-def get_score_fns(model, ds_name, ood_dss, atks, **kwargs):
-    return {
-            'DMD-ood': partial(
-                dmd_score,
-                pos_loader_train = f'{ds_name}-val-{model}',
-                pos_loader_test = f'{ds_name}-test-{model}',
-                neg_loaders = {f'{k}-test-{model}': [f'{k}-val-{model}'] for k in ood_dss.keys()},
-                ),
-            'DMD-aa': partial(
-                dmd_score,
-                pos_loader_train = f'{ds_name}-val-{model}',
-                pos_loader_test = f'{ds_name}-test-{model}',
-                neg_loaders = {f'{ds_name}-test-{a}-{model}': [f'{ds_name}-val-{a}-{model}'] for a in atks},
-                ),
-        }
+def get_scores(**kwargs):
+    '''
+    Return the analysis scores along with the arguments of their `fit()` and `compute()`, so that the scripts can fit and compute them uniformly. One regressor is trained for each negative loader, and the loader it was trained against is kept in the 'calib key' column of the score.
 
-def get_auc_kwargs_ood(model, ds_name, ood_dss):
-    return {
-            'ori_loaders': {
-                'DMD-ood': [f'{k}-val-{model}' for k in ood_dss.keys()],
-                },
-            'atk_loaders': [f'{k}-test-{model}' for k in ood_dss.keys()],
-            'filter_key': None
-            }
+    Args:
+    - path (str|pathlib.Path): folder where the scores are saved.
+    - name (str): name of the score.
+    - ds_name (str), model (str): dataset and model names, used to build the loader keys.
+    - neg_loaders (dict{str: list[str]}): negative test loaders mapped to the negative train loaders used to train their regressor.
 
-def get_auc_kwargs_aa(model, ds_name, atks):
-    return {
-            'ori_loaders': {
-                'DMD-aa': [f'{ds_name}-val-{a}-{model}' for a in atks],
-                },
-            'atk_loaders': [f'{ds_name}-test-{a}-{model}' for a in atks],
-            }
+    Returns:
+    - list[dict]: one entry per score, with the score in 'score' and its specific arguments in 'fit' and 'compute'.
+    '''
+    path = kwargs['path']
+    name = kwargs['name']
+    ds_name = kwargs['ds_name']
+    model = kwargs['model']
+    neg_loaders = kwargs['neg_loaders']
+
+    return [{
+        'score': DMDScore(path=path, name=name),
+        'fit': {
+            'pos_train_loader': f'{ds_name}-val-{model}',
+            'neg_loaders': neg_loaders,
+            },
+        'compute': {
+            'pos_test_loader': f'{ds_name}-test-{model}',
+            },
+        }]

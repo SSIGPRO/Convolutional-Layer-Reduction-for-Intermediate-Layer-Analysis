@@ -72,7 +72,20 @@ hyper_params_file = phs_path/f'hyperparams.pickle'
 
 results_path = Path.cwd()/'temp_results'
 
-aucs_df_path = results_path/'aucs_comparison.pickle'
+# detection metrics reported by the experiments, both of them the smaller the better
+det_metrics = ['E-AURC', 'DetError']
+
+# one report per detection metric
+det_metrics_df_paths = {_m: results_path/f'{_m}_comparison.pickle' for _m in det_metrics}
+
+# report used to skip the analyses already computed
+saved_df_path = det_metrics_df_paths[det_metrics[0]]
+
+# scores computed from the peepholes, one folder per reduction
+scores_path = results_path/'scores'/args.dataset/args.model/args.reduction
+
+# scores compared against, which do not depend on the reduction
+others_scores_path = results_path/'scores'/args.dataset/args.model
 
 #--------------------------------
 # Runing
@@ -89,6 +102,24 @@ chunk_size = 5000 # divides parsed dataset into smaller files for efficiency
 # Defs
 #--------------------------------
 atk_names = ['BIM', 'PGD', 'FAB-t', 'Square', 'APGD-ce', 'APGD-t']
+
+def get_pos_loader():
+    return f'{args.dataset}-test-{args.model}'
+
+def get_neg_loaders_ood(ood_dss):
+    return [f'{k}-test-{args.model}' for k in ood_dss.keys()]
+
+def get_neg_loaders_aa(atks):
+    return [f'{args.dataset}-test-{a}-{args.model}' for a in atks]
+
+def get_neg_loaders_fit(ood_dss, atks):
+    '''
+    Negative test loaders mapped to the negative train loaders used to calibrate them, for the scores fitted against each negative loader.
+    '''
+    return {
+            **{f'{k}-test-{args.model}': [f'{k}-val-{args.model}'] for k in ood_dss.keys()},
+            **{f'{args.dataset}-test-{a}-{args.model}': [f'{args.dataset}-val-{a}-{args.model}'] for a in atks},
+            }
 
 def get_loaders(ood_dss):
     return (

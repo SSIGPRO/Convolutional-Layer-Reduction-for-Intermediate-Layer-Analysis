@@ -5,7 +5,6 @@ sys.path.insert(0, (Path.home()/'repos/peepholelib').as_posix())
 sys.path.insert(0, (Path.home()/'repos/ConvRed').as_posix())
 
 import pandas as pd
-from statistics import geometric_mean as geomean
 
 # torch stuff
 import torch
@@ -17,8 +16,9 @@ from peepholelib.models.model_wrap import ModelWrap
 from peepholelib.datasets.parsedDataset import ParsedDataset 
 from peepholelib.coreVectors.coreVectors import CoreVectors 
 from peepholelib.peepholes.peepholes import Peepholes
-from peepholelib.plots.atks import auc_atks 
+from peepholelib.eval.detection_metrics import detection_metrics
 from configs.common import *
+from utils.save_det_metrics import make_reports
 
 # Tuner
 from functools import partial
@@ -138,52 +138,59 @@ def peephole_wrap(config, **kwargs):
             )
 
         # Evaluation
-        score_fns = get_score_fns(args.model, args.dataset, ood_datasets, atk_names, proto_threshold=proto_threshold)
-        scores = {}
-        # TODO: update aucs after PR
-        for score_name, score_fn in score_fns.items():
-            scores = score_fn(
+        # the scores are saved along the trial's peepholes, so that the trials do not share them
+        scores = []
+        for _score in get_scores(
+                path = ph_path/'scores',
+                name = args.analysis,
+                ds_name = ds_name,
+                model = args.model,
+                loaders = list(ds._dss.keys()),
+                neg_loaders = get_neg_loaders_fit(ood_datasets, atk_names),
+                proto_threshold = proto_threshold,
+                ):
+            score = _score['score']
+
+            if not score.load():
+                score.fit(
+                        datasets = ds,
+                        peepholes = ph,
+                        target_modules = target_layers,
+                        verbose = verbose,
+                        **_score['fit']
+                        )
+
+            score.compute(
                     datasets = ds,
                     peepholes = ph,
-                    score_name = score_name,
-                    batch_size = bs,
                     target_modules = target_layers,
-                    append_scores = scores,
-                    verbose = verbose
+                    verbose = verbose,
+                    **_score['compute']
                     )
-            if type(scores) == tuple: scores = scores[0]
 
-        auc_kwargs_ood = get_auc_kwargs_ood(args.model, args.dataset, ood_datasets)
-        aucs_ood = auc_atks(
-                datasets = ds,
+            scores.append(score)
+
+        res_ood = detection_metrics(
                 scores = scores,
-                **auc_kwargs_ood,
+                pos_loader = get_pos_loader(),
+                neg_loaders = get_neg_loaders_ood(ood_datasets),
+                metrics = ['AUROC'],
                 verbose = verbose
                 )
 
-        auc_kwargs_aa = get_auc_kwargs_aa(args.model, args.dataset, atk_names)
-        aucs_aa = auc_atks(
-                datasets = ds,
+        res_aa = detection_metrics(
                 scores = scores,
-                **auc_kwargs_aa,
+                datasets = ds,
+                pos_loader = get_pos_loader(),
+                neg_loaders = get_neg_loaders_aa(atk_names),
+                metrics = ['AUROC'],
+                filter_key = 'attack_success',
                 verbose = verbose
                 )
-        
-        report = {}
-        _aucs_ood = []
-        for k in auc_kwargs_ood['atk_loaders']:
-            report['AUC '+k] = list(aucs_ood[k].values())[0]
-            _aucs_ood.append(report['AUC '+k]) 
-        report['AUC OoD'] = geomean(_aucs_ood)
 
-        _aucs_aa = []
-        for k in auc_kwargs_aa['atk_loaders']:
-            report['AUC '+k] = list(aucs_aa[k].values())[0]
-            _aucs_aa.append(report['AUC '+k]) 
-        report['AUC AA'] = geomean(_aucs_aa)
+        # the configurations are still selected by their AUC, see get_best_config()
+        report = make_reports(res_ood, res_aa, args.analysis, ['AUROC'])['AUROC']
 
-        report['AUC general'] = geomean(_aucs_ood+_aucs_aa)
-        
         print('Report: ', report)
 
         train.report(report)
